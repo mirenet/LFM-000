@@ -58,6 +58,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean scrollBar = true;
     private boolean mobilView = true;
     private boolean background = false;
+    private boolean isLongPressBack = false;
     private WebView webView;
     private WebView overlayWebView;
     private MenuControler menuControler;
@@ -239,8 +240,8 @@ public class MainActivity extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                if (menuControler != null && menuControler.isMenuVisible()) {
-                    menuControler.toggleMenu();
+                if (isLongPressBack) {
+                    isLongPressBack = false;
                     return;
                 }
 
@@ -500,6 +501,35 @@ public class MainActivity extends AppCompatActivity {
         } else {
             webView.loadUrl("file:///android_asset/menu.html");
         }
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, android.view.KeyEvent event) {
+        if (keyCode == android.view.KeyEvent.KEYCODE_BACK) {
+            if (event.getRepeatCount() == 0) {
+                isLongPressBack = false;
+                event.startTracking();
+            }
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
+    }
+
+    @Override
+    public boolean onKeyLongPress(int keyCode, android.view.KeyEvent event) {
+        if (keyCode == android.view.KeyEvent.KEYCODE_BACK) {
+            isLongPressBack = true;
+            try {
+                Intent serviceIntent = new Intent(this, MediaService.class);
+                stopService(serviceIntent);
+            } catch (Exception ignored) {}
+
+            finishAffinity();
+            android.os.Process.killProcess(android.os.Process.myPid());
+            System.exit(0);
+            return true;
+        }
+        return super.onKeyLongPress(keyCode, event);
     }
 
     private boolean launchFileChooser(ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams) {
